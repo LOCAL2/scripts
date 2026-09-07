@@ -37,7 +37,7 @@ end
 
 local PathParagraph = Tabs.Main:AddParagraph({
     Title = "Save Location",
-    Content = "Path: [Executor Folder]/workspace/" .. sanitizePath(dumpFolderName) .. "/" .. getMapName() .. "/Dump - " .. getMapName() .. ".txt"
+    Content = "Path: [Executor Folder]/workspace/" .. sanitizePath(dumpFolderName) .. "/" .. getMapName() .. "/"
 })
 
 task.spawn(function()
@@ -45,24 +45,13 @@ task.spawn(function()
     local s, info = pcall(function() return mps:GetProductInfo(game.PlaceId) end)
     if s and info and info.Name then
         mapName = info.Name
-        PathParagraph:SetDesc("Path: [Executor Folder]/workspace/" .. sanitizePath(dumpFolderName) .. "/" .. getMapName() .. "/Dump - " .. getMapName() .. ".txt")
+        PathParagraph:SetDesc("Path: [Executor Folder]/workspace/" .. sanitizePath(dumpFolderName) .. "/" .. getMapName() .. "/")
     end
 end)
 
 local StatusParagraph = Tabs.Main:AddParagraph({
     Title = "Dump Status",
     Content = "Status: Idle\nProgress: 0%"
-})
-
-
-Tabs.Main:AddDropdown("ExportFormatDropdown", {
-    Title = "Export Format",
-    Values = {"Single File (.txt)", "Folder Tree (.lua)"},
-    Multi = false,
-    Default = 1,
-    Callback = function(Value)
-        exportFormat = Value
-    end
 })
 
 Tabs.Main:AddInput("FolderNameInput", {
@@ -73,7 +62,7 @@ Tabs.Main:AddInput("FolderNameInput", {
     Finished = false,
     Callback = function(Value)
         dumpFolderName = Value
-        PathParagraph:SetDesc("Path: [Executor Folder]/workspace/" .. sanitizePath(dumpFolderName) .. "/" .. getMapName() .. "/Dump - " .. getMapName() .. ".txt")
+        PathParagraph:SetDesc("Path: [Executor Folder]/workspace/" .. sanitizePath(dumpFolderName) .. "/" .. getMapName() .. "/")
     end
 })
 
@@ -142,24 +131,24 @@ local function dumpGame()
         end
     end)
     
-    local fileName = folderPath .. "/Dump - " .. getMapName() .. ".txt"
+    local mainLuaFile = folderPath .. "/game_structure.lua"
     
     Fluent:Notify({
         Title = "Dumping Started",
-        Content = "Please wait... saving to " .. fileName,
+        Content = "Please wait... saving to " .. folderPath,
         Duration = 10
     })
 
-    local header = "=========================================================\n" ..
-                   "--  Game Dump Output\n" ..
+    local header = "--[[=========================================================\n" ..
+                   "  Game Dump Output\n" ..
                    "=========================================================\n" ..
-                   "-- Game Name: " .. tostring(mapName) .. "\n" ..
-                   "-- PlaceId: " .. tostring(game.PlaceId) .. "\n" ..
-                   "-- JobId: " .. tostring(game.JobId) .. "\n" ..
-                   "=========================================================\n\n"
+                   "  Game Name: " .. tostring(mapName) .. "\n" ..
+                   "  PlaceId: " .. tostring(game.PlaceId) .. "\n" ..
+                   "  JobId: " .. tostring(game.JobId) .. "\n" ..
+                   "=========================================================]]\n\n"
                    
     local wSuccess, wErr = pcall(function()
-        writefile(fileName, header)
+        writefile(mainLuaFile, header)
     end)
     
     if not wSuccess then
@@ -310,37 +299,26 @@ local function dumpGame()
                 pcall(function() appendfile(folderPath .. "/decompile_log.txt", "Finished: " .. fullName .. "\n") end)
                 
                 if src and src ~= "" and not string.match(src, "Failed to decompile") then
-                    if exportFormat == "Folder Tree (.lua)" then
-                        -- Reconstruct folder hierarchy
-                        local cleanParts = {}
-                        for part in string.gmatch(fullName, "[^%.]+") do
-                            table.insert(cleanParts, sanitizePath(part))
+                    -- Reconstruct folder hierarchy for separate .lua files
+                    local cleanParts = {}
+                    for part in string.gmatch(fullName, "[^%.]+") do
+                        table.insert(cleanParts, sanitizePath(part))
+                    end
+                    local fileName = table.remove(cleanParts) .. "." .. instance.ClassName .. ".lua"
+                    
+                    local currentPath = folderPath .. "/Scripts"
+                    pcall(function()
+                        if not isfolder(currentPath) then
+                            makefolder(currentPath)
                         end
-                        local fileName = table.remove(cleanParts) .. "." .. instance.ClassName .. ".lua"
-                        
-                        local currentPath = folderPath .. "/Scripts"
-                        pcall(function()
+                        for _, folder in ipairs(cleanParts) do
+                            currentPath = currentPath .. "/" .. folder
                             if not isfolder(currentPath) then
                                 makefolder(currentPath)
                             end
-                            for _, folder in ipairs(cleanParts) do
-                                currentPath = currentPath .. "/" .. folder
-                                if not isfolder(currentPath) then
-                                    makefolder(currentPath)
-                                end
-                            end
-                            writefile(currentPath .. "/" .. fileName, src)
-                        end)
-                    else
-                        table.insert(buffer, indent .. "│   --- SCRIPT SOURCE START ---")
-                        lineCount = lineCount + 1
-                        for line in string.gmatch(src, "[^\r\n]+") do
-                            table.insert(buffer, indent .. "│     " .. line)
-                            lineCount = lineCount + 1
                         end
-                        table.insert(buffer, indent .. "│   --- SCRIPT SOURCE END ---")
-                        lineCount = lineCount + 1
-                    end
+                        writefile(currentPath .. "/" .. fileName, src)
+                    end)
                 end
             end
         end
@@ -361,16 +339,16 @@ local function dumpGame()
 
     -- Loaded Modules (getloadedmodules executor function)
     if getloadedmodules then
-        table.insert(buffer, "\n=========================================================")
-        table.insert(buffer, "--  Loaded Modules (getloadedmodules)")
-        table.insert(buffer, "=========================================================\n")
+        table.insert(buffer, "\n--[[=========================================================")
+        table.insert(buffer, "  Loaded Modules (getloadedmodules)")
+        table.insert(buffer, "=========================================================]]\n")
         local successLM, loadedModules = pcall(getloadedmodules)
         if successLM and type(loadedModules) == "table" then
             for idx, mod in ipairs(loadedModules) do
                 local modPath = "Unknown"
                 pcall(function() modPath = mod:GetFullName() end)
                 if not (skipRobloxInternals and isRobloxInternal(mod)) then
-                    table.insert(buffer, "[" .. idx .. "] " .. modPath)
+                    table.insert(buffer, "-- [" .. idx .. "] " .. modPath)
                 end
             end
         else
@@ -379,21 +357,21 @@ local function dumpGame()
     end
 
     -- Script Index Summary Section
-    table.insert(buffer, "\n=========================================================")
-    table.insert(buffer, "--  Script Index Summary (" .. #scriptIndexList .. " total)")
-    table.insert(buffer, "=========================================================\n")
+    table.insert(buffer, "\n--[[=========================================================")
+    table.insert(buffer, "  Script Index Summary (" .. #scriptIndexList .. " total)")
+    table.insert(buffer, "=========================================================]]\n")
     for _, scriptInfo in ipairs(scriptIndexList) do
-        table.insert(buffer, scriptInfo)
+        table.insert(buffer, "-- " .. scriptInfo)
     end
 
     
     if isDumping then
-        pcall(function() appendfile(fileName, table.concat(buffer, "\n") .. "\n") end)
+        pcall(function() appendfile(mainLuaFile, table.concat(buffer, "\n") .. "\n") end)
         isDumping = false
         StatusParagraph:SetDesc("Status: Complete!\nProgress: 100%")
         Fluent:Notify({
             Title = "Dump Success",
-            Content = "Game has been successfully dumped to " .. fileName,
+            Content = "Game has been successfully dumped into " .. folderPath,
             Duration = 8
         })
     else
