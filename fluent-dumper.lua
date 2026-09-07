@@ -308,7 +308,7 @@ local function dumpGame()
                     buffer[#buffer + 1] = indent .. "│   > Property: Health = " .. tostring(instance.Health); lineCount = lineCount + 1
                     buffer[#buffer + 1] = indent .. "│   > Property: MaxHealth = " .. tostring(instance.MaxHealth); lineCount = lineCount + 1
                     buffer[#buffer + 1] = indent .. "│   > Property: WalkSpeed = " .. tostring(instance.WalkSpeed); lineCount = lineCount + 1
-                    buffer[#buffer + 1] = indent .. "│   > Property: JumpPower = " .. tostring(instance.JumpPower)); lineCount = lineCount + 1
+                    buffer[#buffer + 1] = indent .. "│   > Property: JumpPower = " .. tostring(instance.JumpPower); lineCount = lineCount + 1
                 end
             end
         
