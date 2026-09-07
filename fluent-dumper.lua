@@ -269,14 +269,14 @@ local function dumpGame()
 
         local indent = string.rep("  ", depth)
         
-        table.insert(buffer, indent .. "├── " .. iName .. " [" .. iClass .. "]")
+        buffer[#buffer + 1] = indent .. "├── " .. iName .. " [" .. iClass .. "]"
         lineCount = lineCount + 1
             
             -- Attributes
             local sAttr, attributes = pcall(function() return instance:GetAttributes() end)
             if sAttr and attributes then
                 for k, v in pairs(attributes) do
-                    table.insert(buffer, indent .. "│   @ Attribute: " .. tostring(k) .. " = " .. tostring(v) .. " [" .. typeof(v) .. "]")
+                    buffer[#buffer + 1] = indent .. "│   @ Attribute: " .. tostring(k) .. " = " .. tostring(v) .. " [" .. typeof(v) .. "]"
                     lineCount = lineCount + 1
                 end
             end
@@ -284,17 +284,17 @@ local function dumpGame()
             -- Properties
             if includeProperties then
                 if instance:IsA("BasePart") then
-                    table.insert(buffer, indent .. "│   > Property: Position = " .. tostring(instance.Position)); lineCount = lineCount + 1
-                    table.insert(buffer, indent .. "│   > Property: Size = " .. tostring(instance.Size)); lineCount = lineCount + 1
-                    table.insert(buffer, indent .. "│   > Property: Transparency = " .. tostring(instance.Transparency)); lineCount = lineCount + 1
-                    table.insert(buffer, indent .. "│   > Property: Color = " .. tostring(instance.Color)); lineCount = lineCount + 1
-                    table.insert(buffer, indent .. "│   > Property: Anchored = " .. tostring(instance.Anchored)); lineCount = lineCount + 1
-                    table.insert(buffer, indent .. "│   > Property: CanCollide = " .. tostring(instance.CanCollide)); lineCount = lineCount + 1
+                    buffer[#buffer + 1] = indent .. "│   > Property: Position = " .. tostring(instance.Position); lineCount = lineCount + 1
+                    buffer[#buffer + 1] = indent .. "│   > Property: Size = " .. tostring(instance.Size); lineCount = lineCount + 1
+                    buffer[#buffer + 1] = indent .. "│   > Property: Transparency = " .. tostring(instance.Transparency); lineCount = lineCount + 1
+                    buffer[#buffer + 1] = indent .. "│   > Property: Color = " .. tostring(instance.Color); lineCount = lineCount + 1
+                    buffer[#buffer + 1] = indent .. "│   > Property: Anchored = " .. tostring(instance.Anchored); lineCount = lineCount + 1
+                    buffer[#buffer + 1] = indent .. "│   > Property: CanCollide = " .. tostring(instance.CanCollide); lineCount = lineCount + 1
                 elseif instance:IsA("Humanoid") then
-                    table.insert(buffer, indent .. "│   > Property: Health = " .. tostring(instance.Health)); lineCount = lineCount + 1
-                    table.insert(buffer, indent .. "│   > Property: MaxHealth = " .. tostring(instance.MaxHealth)); lineCount = lineCount + 1
-                    table.insert(buffer, indent .. "│   > Property: WalkSpeed = " .. tostring(instance.WalkSpeed)); lineCount = lineCount + 1
-                    table.insert(buffer, indent .. "│   > Property: JumpPower = " .. tostring(instance.JumpPower)); lineCount = lineCount + 1
+                    buffer[#buffer + 1] = indent .. "│   > Property: Health = " .. tostring(instance.Health); lineCount = lineCount + 1
+                    buffer[#buffer + 1] = indent .. "│   > Property: MaxHealth = " .. tostring(instance.MaxHealth); lineCount = lineCount + 1
+                    buffer[#buffer + 1] = indent .. "│   > Property: WalkSpeed = " .. tostring(instance.WalkSpeed); lineCount = lineCount + 1
+                    buffer[#buffer + 1] = indent .. "│   > Property: JumpPower = " .. tostring(instance.JumpPower)); lineCount = lineCount + 1
                 end
             end
         
