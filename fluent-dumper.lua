@@ -326,21 +326,25 @@ local function dumpGame()
                     for part in string.gmatch(fullName, "[^%.]+") do
                         table.insert(cleanParts, sanitizePath(part))
                     end
-                    local fileName = table.remove(cleanParts) .. "." .. instance.ClassName .. ".lua"
                     
-                    local currentPath = folderPath .. "/Scripts"
-                    pcall(function()
-                        if not isfolder(currentPath) then
-                            makefolder(currentPath)
-                        end
-                        for _, folder in ipairs(cleanParts) do
-                            currentPath = currentPath .. "/" .. folder
+                    if #cleanParts > 0 then
+                        local rawFileName = table.remove(cleanParts, #cleanParts)
+                        local fileName = tostring(rawFileName) .. "." .. tostring(instance.ClassName) .. ".lua"
+                        
+                        local currentPath = folderPath .. "/Scripts"
+                        pcall(function()
                             if not isfolder(currentPath) then
                                 makefolder(currentPath)
                             end
-                        end
-                        writefile(currentPath .. "/" .. fileName, src)
-                    end)
+                            for _, folder in ipairs(cleanParts) do
+                                currentPath = currentPath .. "/" .. tostring(folder)
+                                if not isfolder(currentPath) then
+                                    makefolder(currentPath)
+                                end
+                            end
+                            writefile(currentPath .. "/" .. fileName, src)
+                        end)
+                    end
                 end
             end
         end
