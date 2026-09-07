@@ -22,7 +22,6 @@ local isDumping = false
 local includeProperties = false
 local includeScripts = true
 local skipRobloxInternals = true
-local dumpMode = "Full Game"
 local exportFormat = "Single File (.txt)"
 
 local function sanitizePath(name)
@@ -55,15 +54,6 @@ local StatusParagraph = Tabs.Main:AddParagraph({
     Content = "Status: Idle\nProgress: 0%"
 })
 
-Tabs.Main:AddDropdown("DumpModeDropdown", {
-    Title = "Dump Mode",
-    Values = {"Full Game", "AI Optimized (Best for LLMs)", "Remotes & ReplicatedStorage"},
-    Multi = false,
-    Default = 2,
-    Callback = function(Value)
-        dumpMode = Value
-    end
-})
 
 Tabs.Main:AddDropdown("ExportFormatDropdown", {
     Title = "Export Format",
@@ -181,35 +171,17 @@ local function dumpGame()
     local buffer = {}
     local lineCount = 0
     
-    local servicesToDump = {}
-    if dumpMode == "Full Game" then
-        servicesToDump = {
-            game:GetService("Workspace"),
-            game:GetService("Players"),
-            game:GetService("ReplicatedStorage"),
-            game:GetService("ReplicatedFirst"),
-            game:GetService("StarterGui"),
-            game:GetService("StarterPack"),
-            game:GetService("StarterPlayer"),
-            game:GetService("Lighting"),
-            game:GetService("TextChatService")
-        }
-    elseif dumpMode == "AI Optimized (Best for LLMs)" then
-        servicesToDump = {
-            game:GetService("ReplicatedStorage"),
-            game:GetService("ReplicatedFirst"),
-            game:GetService("StarterGui"),
-            game:GetService("StarterPack"),
-            game:GetService("StarterPlayer"),
-            game:GetService("Lighting"),
-            game:GetService("TextChatService")
-        }
-    else
-        servicesToDump = { 
-            game:GetService("ReplicatedStorage"),
-            game:GetService("ReplicatedFirst")
-        }
-    end
+    local servicesToDump = {
+        game:GetService("Workspace"),
+        game:GetService("Players"),
+        game:GetService("ReplicatedStorage"),
+        game:GetService("ReplicatedFirst"),
+        game:GetService("StarterGui"),
+        game:GetService("StarterPack"),
+        game:GetService("StarterPlayer"),
+        game:GetService("Lighting"),
+        game:GetService("TextChatService")
+    }
 
     -- Roblox internal filtering logic
     local function isRobloxInternal(instance)
@@ -255,50 +227,6 @@ local function dumpGame()
     end
     if not isDumping then return end 
     
-    if dumpMode == "Remotes & ReplicatedStorage" then
-        StatusParagraph:SetDesc("Status: Scanning for Remotes...\nProgress: 0%")
-        table.insert(buffer, "=========================================================")
-        table.insert(buffer, "--  RemoteEvents & RemoteFunctions (Outside ReplicatedStorage)")
-        table.insert(buffer, "=========================================================\n")
-        
-        local rStart = os.clock()
-        local function scanRemotes(inst, depth)
-            if depth > 15 or not isDumping then return end
-            if skipRobloxInternals and isRobloxInternal(inst) then return end
-
-            local s, children = pcall(function() return inst:GetChildren() end)
-            if s and children then
-                if os.clock() - rStart > 0.015 then
-                    task.wait()
-                    rStart = os.clock()
-                end
-                for _, c in ipairs(children) do
-                    local s2, cls = pcall(function() return c.ClassName end)
-                    if s2 and (cls == "RemoteEvent" or cls == "RemoteFunction" or cls == "UnreliableRemoteEvent") then
-                        pcall(function() table.insert(buffer, "[" .. cls .. "] " .. c:GetFullName()) end)
-                        lineCount = lineCount + 1
-                    end
-                    scanRemotes(c, depth + 1)
-                end
-            end
-        end
-
-        local searchServices = {
-            game:GetService("Workspace"), game:GetService("Players"),
-            game:GetService("ReplicatedFirst"), game:GetService("StarterGui"), 
-            game:GetService("StarterPack"), game:GetService("StarterPlayer"),
-            game:GetService("Lighting"), game:GetService("TextChatService")
-        }
-        for _, s in ipairs(searchServices) do 
-            if s then scanRemotes(s, 0) end
-        end
-        
-        table.insert(buffer, "\n=========================================================")
-        table.insert(buffer, "--  ReplicatedStorage Dump")
-        table.insert(buffer, "=========================================================\n")
-        lineCount = lineCount + 6
-    end
-    
     if not isDumping then return end
     
     local processedObjects = 0
@@ -330,14 +258,10 @@ local function dumpGame()
         iName = sName and iName or "Unknown"
         iClass = sClass and iClass or "Unknown"
 
-        local isUselessVisual = instance:IsA("BasePart") or instance:IsA("Sound") or instance:IsA("Texture") or instance:IsA("Decal") or instance:IsA("Attachment") or instance:IsA("Weld") or instance:IsA("Motor6D") or instance:IsA("WeldConstraint")
-        local skipPrint = (dumpMode == "AI Optimized (Best for LLMs)" and isUselessVisual)
-
         local indent = string.rep("  ", depth)
         
-        if not skipPrint then
-            table.insert(buffer, indent .. "├── " .. iName .. " [" .. iClass .. "]")
-            lineCount = lineCount + 1
+        table.insert(buffer, indent .. "├── " .. iName .. " [" .. iClass .. "]")
+        lineCount = lineCount + 1
             
             -- Attributes
             local sAttr, attributes = pcall(function() return instance:GetAttributes() end)
@@ -364,7 +288,6 @@ local function dumpGame()
                     table.insert(buffer, indent .. "│   > Property: JumpPower = " .. tostring(instance.JumpPower)); lineCount = lineCount + 1
                 end
             end
-        end
         
         -- Scripts
         if instance:IsA("LuaSourceContainer") then
