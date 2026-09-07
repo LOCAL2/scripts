@@ -302,9 +302,9 @@ local function dumpGame()
         if instance:IsA("LuaSourceContainer") then
             local fullName = "UnknownPath"
             pcall(function() fullName = instance:GetFullName() end)
-            if type(scriptIndexList) == "table" then
-                table.insert(scriptIndexList, "[" .. tostring(iClass) .. "] " .. tostring(fullName))
-            end
+            pcall(function()
+                scriptIndexList[#scriptIndexList + 1] = "[" .. tostring(iClass) .. "] " .. tostring(fullName)
+            end)
 
             if includeScripts then
                 local scriptName = sName and iName or "UnknownScript"
@@ -324,11 +324,13 @@ local function dumpGame()
                     -- Reconstruct folder hierarchy for separate .lua files
                     local cleanParts = {}
                     for part in string.gmatch(fullName, "[^%.]+") do
-                        table.insert(cleanParts, sanitizePath(part))
+                        cleanParts[#cleanParts + 1] = sanitizePath(part)
                     end
                     
                     if #cleanParts > 0 then
-                        local rawFileName = table.remove(cleanParts, #cleanParts)
+                        local rawFileName = cleanParts[#cleanParts]
+                        cleanParts[#cleanParts] = nil
+                        
                         local fileName = tostring(rawFileName) .. "." .. tostring(instance.ClassName) .. ".lua"
                         
                         local currentPath = folderPath .. "/Scripts"
