@@ -99,19 +99,39 @@ Tabs.Main:AddParagraph({
 })
 
 local function getScriptSource(obj)
-    if decompile then
-        local success, source = pcall(decompile, obj)
-        if success and type(source) == "string" and source ~= "" then
-            return source
+    local resultSource = nil
+    local completed = false
+
+    task.spawn(function()
+        if decompile then
+            local success, source = pcall(decompile, obj)
+            if success and type(source) == "string" and source ~= "" then
+                resultSource = source
+                completed = true
+                return
+            end
         end
+
+        local success, source = pcall(function() return obj.Source end)
+        if success and type(source) == "string" and source ~= "" then
+            resultSource = source
+            completed = true
+            return
+        end
+
+        resultSource = "-- Failed to decompile or source is restricted"
+        completed = true
+    end)
+
+    local start = os.clock()
+    while not completed do
+        if os.clock() - start > 3 then -- 3 seconds timeout per script
+            return "-- [TIMEOUT] Decompile took too long (Skipped to prevent freeze)"
+        end
+        task.wait(0.05)
     end
-    
-    local success, source = pcall(function() return obj.Source end)
-    if success and type(source) == "string" and source ~= "" then
-        return source
-    end
-    
-    return "-- Failed to decompile or source is restricted"
+
+    return resultSource
 end
 
 local function dumpGame()
