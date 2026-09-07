@@ -302,7 +302,9 @@ local function dumpGame()
         if instance:IsA("LuaSourceContainer") then
             local fullName = "UnknownPath"
             pcall(function() fullName = instance:GetFullName() end)
-            table.insert(scriptIndexList, "[" .. iClass .. "] " .. fullName)
+            if type(scriptIndexList) == "table" then
+                table.insert(scriptIndexList, "[" .. tostring(iClass) .. "] " .. tostring(fullName))
+            end
 
             if includeScripts then
                 local scriptName = sName and iName or "UnknownScript"
